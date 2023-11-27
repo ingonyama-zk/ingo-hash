@@ -10,7 +10,6 @@ int main() {
         }
     }
 
-    hls::stream<msg_pkt_t> s_msg;
     kernel_m_axi_groestl_256((block_t *) gmem_msg, gmem_hash, TEST_N_BLOCKS * N_BYTES_IN_BLOCK, TEST_N_MSGS);
 
     for (int i = 0; i < TEST_N_MSGS; i++) {

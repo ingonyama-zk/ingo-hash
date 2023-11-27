@@ -11,40 +11,25 @@
 #include <experimental/xrt_ip.h>
 
 struct hash_256_t {
-    char bytes[64];
+    unsigned char bytes[32];
+
+    void print() {
+        for (int i = 0; i < 32; i++) {
+            printf("%02x ", bytes[i]);
+        }
+        printf("\n");
+    }
 };
 
-static void print_hash_256(hash_256_t hash) {
-    for (int i = 0; i < 32; i++) {
-        printf("%02x ", (unsigned char) hash.bytes[i]);
-    }
-    printf("\n");
-}
-
 static xrt::uuid init_device(xrt::device &device) {
-    std::string xclbin_file;
-    char *env_emu;
-    if (env_emu = getenv("XCL_EMULATION_MODE")) {
-        std::string mode(env_emu);
-        if (mode == "hw_emu") {
-            std::cout << "Program running in hardware emulation mode" << std::endl;
-            xclbin_file = "emu.xclbin";
-        } else {
-            assert("[ERROR] Unsupported Emulation Mode: ");
-        }
-    } else {
-        std::cout << "Program running in hardware mode" << std::endl;
-        xclbin_file = "hw.xclbin";
-    }
-    xrt::uuid xclbin_uuid = device.load_xclbin(xclbin_file);
+    xrt::uuid xclbin_uuid = device.load_xclbin("emu.xclbin");
     return xclbin_uuid;
 }
 
 int main() {
-    constexpr uint64_t HASH_SIZE = 32;
     constexpr uint64_t MSG_SIZE = 8192;
     constexpr uint32_t BATCH_SIZE = 32;
-    // setup
+    
     xrt::device device = xrt::device(0);
     xrt::uuid xclbin_uuid = init_device(device);
 
@@ -54,13 +39,17 @@ int main() {
     auto k_hash_gmem_hash_bank_group = k_hash.group_id(1);
 
     auto msg_buffer = xrt::bo(device, MSG_SIZE * BATCH_SIZE, k_hash_gmem_msg_bank_group);
-    auto hash_buffer = xrt::bo(device, HASH_SIZE * BATCH_SIZE, k_hash_gmem_hash_bank_group);
+    auto hash_buffer = xrt::bo(device, sizeof(hash_256_t) * BATCH_SIZE, k_hash_gmem_hash_bank_group);
 
+    static char msgs[BATCH_SIZE][MSG_SIZE] = {0};
+    for (int i = 0; i < BATCH_SIZE; i++) {
+        for (int j = 0; j < MSG_SIZE; j++) {
+            msgs[i][j] = (j + i) % 256;
+        }
+    }
+
+    msg_buffer.write(msgs);
     msg_buffer.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-    std::cout << msg_buffer.size() << std::endl;
-    std::cout << hash_buffer.size() << std::endl;
-    std::cout << msg_buffer.address() << std::endl;
-    std::cout << hash_buffer.address() << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
     auto run = k_hash(msg_buffer, hash_buffer, MSG_SIZE, BATCH_SIZE);
@@ -72,12 +61,6 @@ int main() {
     std::cout << "Throughput: " << throughput << " GiB/s" << std::endl;
 
     hash_buffer.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
-
-    hash_256_t hashes[BATCH_SIZE] = {0};
+    static hash_256_t hashes[BATCH_SIZE] = {0};
     hash_buffer.read(hashes);
-
-    for (int i = 0; i < BATCH_SIZE; i++) {
-        std::cout << "hash[" << i << "]: ";
-        print_hash_256(hashes[i]);
-    }
 }
