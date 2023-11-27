@@ -69,6 +69,10 @@
         "bitset": "cpp",
         "codecvt": "cpp",
         "optional": "cpp",
-        "__nullptr": "cpp"
+        "__nullptr": "cpp",
+        "any": "cpp",
+        "set": "cpp",
+        "typeindex": "cpp",
+        "variant": "cpp"
     }
 }

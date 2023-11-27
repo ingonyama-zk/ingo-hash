@@ -43,18 +43,19 @@ static xrt::uuid init_device(xrt::device &device) {
 int main() {
     constexpr uint64_t HASH_SIZE = 64;
     constexpr uint64_t MSG_SIZE = 8192;
-    constexpr uint32_t BATCH_SIZE = 32;
+    constexpr uint32_t BATCH_SIZE = 32*1024;
     // setup
     xrt::device device = xrt::device(0);
     xrt::uuid xclbin_uuid = init_device(device);
 
-    xrt::kernel k_hash = xrt::kernel(device, xclbin_uuid, "k_m_axi_groestl_256_0");
+    xrt::kernel k_hash = xrt::kernel(device, xclbin_uuid, "kernel_m_axi_groestl_256");
     xrt::run run_k_hash(k_hash);
 
-    auto k_hash_bank_group = k_hash.group_id(0);
+    auto k_hash_gmem_msg_bank_group = k_hash.group_id(0);
+    auto k_hash_gmem_hash_bank_group = k_hash.group_id(1);
 
-    auto msg_buffer = xrt::bo(device, MSG_SIZE * BATCH_SIZE, k_hash_bank_group);
-    auto hash_buffer = xrt::bo(device, HASH_SIZE * BATCH_SIZE, k_hash_bank_group);
+    auto msg_buffer = xrt::bo(device, MSG_SIZE * BATCH_SIZE, k_hash_gmem_msg_bank_group);
+    auto hash_buffer = xrt::bo(device, HASH_SIZE * BATCH_SIZE, k_hash_gmem_hash_bank_group);
 
     msg_buffer.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
@@ -63,15 +64,21 @@ int main() {
     run_k_hash.set_arg(2, MSG_SIZE);
     run_k_hash.set_arg(3, BATCH_SIZE);
 
+    auto start = std::chrono::high_resolution_clock::now();
     run_k_hash.start();
     run_k_hash.wait();
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration<double>(stop - start).count();
+    double total_gigabytes = static_cast<double>(MSG_SIZE * BATCH_SIZE) / (1ULL << 30);
+    double throughput = total_gigabytes / duration;
+    std::cout << "Throughput: " << throughput << " GiB/s" << std::endl;
 
     hash_buffer.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
-    hash_256_t hashes[BATCH_SIZE];
-    hash_buffer.read(hashes);
+    // hash_256_t hashes[BATCH_SIZE] = {0};
+    // hash_buffer.read(hashes);
 
-    for (int i = 0; i < BATCH_SIZE; i++) {
-        print_hash_256(hashes[i]);
-    }
+    // for (int i = 0; i < BATCH_SIZE; i++) {
+    //     print_hash_256(hashes[i]);
+    // }
 }
