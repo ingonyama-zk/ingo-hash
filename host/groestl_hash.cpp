@@ -15,10 +15,10 @@ struct hash_256_t {
 };
 
 static void print_hash_256(hash_256_t hash) {
-    for (int i = 0; i < 64; i++) {
-        std::cout << hash.bytes[i];
+    for (int i = 0; i < 32; i++) {
+        printf("%02x ", (unsigned char) hash.bytes[i]);
     }
-    std::cout << std::endl;
+    printf("\n");
 }
 
 static xrt::uuid init_device(xrt::device &device) {
@@ -41,15 +41,14 @@ static xrt::uuid init_device(xrt::device &device) {
 }
 
 int main() {
-    constexpr uint64_t HASH_SIZE = 64;
+    constexpr uint64_t HASH_SIZE = 32;
     constexpr uint64_t MSG_SIZE = 8192;
-    constexpr uint32_t BATCH_SIZE = 32*1024;
+    constexpr uint32_t BATCH_SIZE = 32;
     // setup
     xrt::device device = xrt::device(0);
     xrt::uuid xclbin_uuid = init_device(device);
 
     xrt::kernel k_hash = xrt::kernel(device, xclbin_uuid, "kernel_m_axi_groestl_256");
-    xrt::run run_k_hash(k_hash);
 
     auto k_hash_gmem_msg_bank_group = k_hash.group_id(0);
     auto k_hash_gmem_hash_bank_group = k_hash.group_id(1);
@@ -58,15 +57,14 @@ int main() {
     auto hash_buffer = xrt::bo(device, HASH_SIZE * BATCH_SIZE, k_hash_gmem_hash_bank_group);
 
     msg_buffer.sync(XCL_BO_SYNC_BO_TO_DEVICE);
-
-    run_k_hash.set_arg(0, msg_buffer);
-    run_k_hash.set_arg(1, hash_buffer);
-    run_k_hash.set_arg(2, MSG_SIZE);
-    run_k_hash.set_arg(3, BATCH_SIZE);
+    std::cout << msg_buffer.size() << std::endl;
+    std::cout << hash_buffer.size() << std::endl;
+    std::cout << msg_buffer.address() << std::endl;
+    std::cout << hash_buffer.address() << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
-    run_k_hash.start();
-    run_k_hash.wait();
+    auto run = k_hash(msg_buffer, hash_buffer, MSG_SIZE, BATCH_SIZE);
+    run.wait();
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration<double>(stop - start).count();
     double total_gigabytes = static_cast<double>(MSG_SIZE * BATCH_SIZE) / (1ULL << 30);
@@ -75,10 +73,11 @@ int main() {
 
     hash_buffer.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
-    // hash_256_t hashes[BATCH_SIZE] = {0};
-    // hash_buffer.read(hashes);
+    hash_256_t hashes[BATCH_SIZE] = {0};
+    hash_buffer.read(hashes);
 
-    // for (int i = 0; i < BATCH_SIZE; i++) {
-    //     print_hash_256(hashes[i]);
-    // }
+    for (int i = 0; i < BATCH_SIZE; i++) {
+        std::cout << "hash[" << i << "]: ";
+        print_hash_256(hashes[i]);
+    }
 }
