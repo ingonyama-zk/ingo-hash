@@ -18,21 +18,21 @@ Currently only the Groestl_256 hash function is avaliable. More hash functions c
 Note that the demo applications are bottlenecked by PCIe or memory bandwidth.
 Power is measured as total card power.
 
-|             | LUTs | FFs | Freq (MHz) | Throughput (GiB/s) | Power (W) |
-|-------------|------|-----|------------|--------------------|-----------|
-| groestl_256 |      |     | 300        | 12.8189            | 31        |
-| sha3_256    |      |     |            |                    |           |
-| blake2s     |      |     |            |                    |           |
+|             | LUTs    | Freq (MHz) | Throughput (GiB/s) | Power (W) |
+|-------------|---------|------------|--------------------|-----------|
+| groestl_256 | 122K    | 300        | 12.8189            | 31        |
+| sha3_256    |         |            |                    |           |
+| blake2s     |         |            |                    |           |
 
 ## Hash Core Stats
 Frequency achievable when instantiating the cores without data movers.
 Power is measured just for the hash core.
 
-|             | LUTs | FFs | Freq (MHz) | Throughput (GiB/s) | Power (W) |
-|-------------|------|-----|------------|--------------------|-----------|
-| groestl_256 |      |     | 750        | 44.7               | 12        |
-| sha3_256    |      |     |            |                    |           |
-| blake2s     |      |     |            |                    |           |
+|             | LUTs | Freq (MHz) | Throughput (GiB/s) | Power (W) |
+|-------------|------|------------|--------------------|-----------|
+| groestl_256 | 115K | 750        | 44.7               | 12        |
+| sha3_256    |      |            |                    |           |
+| blake2s     |      |            |                    |           |
 
 ## Total Board Throughput
 Achievable throughput when instantiating as many cores as possible, ignoring
