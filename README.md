@@ -14,6 +14,24 @@ to integrate the internal building blocks in their own FPGA-based design
 
 Currently only the Groestl_256 hash function is avaliable. More hash functions coming soon!
 
+## Demo Application Stats
+Note that the demo applications are bottlenecked by PCIe or memory bandwidth.
+
+|             | LUTs | FFs | Freq (MHz) | Throughput (GiB/s) | Power (W) |
+|-------------|------|-----|------------|--------------------|-----------|
+| groestl_256 |      |     | 300        | 12.8189            | 31        |
+| sha3_256    |      |     |            |                    |           |
+| blake2s     |      |     |            |                    |           |
+
+## Hash Core Stats
+Achievable when instantiating the cores without data movers.
+
+|             | LUTs | FFs | Freq (MHz) | Throughput (GiB/s) | Power (W) |
+|-------------|------|-----|------------|--------------------|-----------|
+| groestl_256 |      |     | 750        | 44.7               | 12        |
+| sha3_256    |      |     |            |                    |           |
+| blake2s     |      |     |            |                    |           |
+
 ## Running the Demo
 The demo is targets any AMD Alveo card, any of the following will work:
 
