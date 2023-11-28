@@ -16,6 +16,7 @@ Currently only the Groestl_256 hash function is avaliable. More hash functions c
 
 ## Demo Application Stats
 Note that the demo applications are bottlenecked by PCIe or memory bandwidth.
+Power is measured as total card power.
 
 |             | LUTs | FFs | Freq (MHz) | Throughput (GiB/s) | Power (W) |
 |-------------|------|-----|------------|--------------------|-----------|
@@ -24,13 +25,24 @@ Note that the demo applications are bottlenecked by PCIe or memory bandwidth.
 | blake2s     |      |     |            |                    |           |
 
 ## Hash Core Stats
-Achievable when instantiating the cores without data movers.
+Frequency achievable when instantiating the cores without data movers.
+Power is measured just for the hash core.
 
 |             | LUTs | FFs | Freq (MHz) | Throughput (GiB/s) | Power (W) |
 |-------------|------|-----|------------|--------------------|-----------|
 | groestl_256 |      |     | 750        | 44.7               | 12        |
 | sha3_256    |      |     |            |                    |           |
 | blake2s     |      |     |            |                    |           |
+
+## Total Board Throughput
+Achievable throughput when instantiating as many cores as possible, ignoring
+memory bandwidth. On cards with HBM, this throughput is realistically achievable.
+
+|             | U200        | U250      | U280        | U50         | U55C        |
+|-------------|-------------|-----------|-------------|-------------|-------------|
+| groestl_256 | 312.9 GiB/s | 447 GiB/s | 357.6 GiB/s | 223.5 GiB/s | 357.6 GiB/s |
+| sha3_256    |             |           |             |             |             |
+| blake2s     |             |           |             |             |             |
 
 ## Running the Demo
 The demo is targets any AMD Alveo card, any of the following will work:
