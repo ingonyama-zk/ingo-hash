@@ -217,7 +217,18 @@ def vision_mark_32_sponge(message, digest_length=8):
         state = vision_mark_32_permute(state)
     return digest[:digest_length]
 
+# Format digest elements as hexadecimal strings
+def format_digest(digest):
+    def element_to_hex(elem):
+        bits = ''.join(str(int(coef)) for coef in elem.polynomial().coefficients(sparse=False))
+        return format(int(bits, 2), 'x')
+    return [element_to_hex(elem) for elem in digest]
+
 # Example usage
 message = [1, 2, 3, 4, 5]  # Example message
 digest = vision_mark_32_sponge(message)
-print("Digest:", digest)
+formatted_digest = format_digest(digest)
+
+# Print the formatted digest
+for i, elem in enumerate(formatted_digest):
+    print(f"Digest element {i}: {elem}")
