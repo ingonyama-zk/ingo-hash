@@ -107,12 +107,12 @@ F = GF(2 ** n, 'a')
 m = 24
 
 # Initialize U using the method described in Code Listing 2
-U = [[F.random_element() for _ in range(ceil(log(m, 2)) + 1)]]
+U = [[F.fetch_int(2**j) for j in range(ceil(log(m, 2)) + 1)]]
 for i in range(1, ceil(log(m, 2))):
-    U.append([U[i - 1][j] + U[i - 1][j] + U[i - 1][i - 1] for j in range(ceil(log(m, 2)) + 1)])
+    U.append([U[i - 1][j] * (U[i - 1][j] + U[i - 1][i - 1]) for j in range(ceil(log(m, 2)) + 1)])
 
 for i in range(ceil(log(m, 2))):
-    normalization_constant = 1 / U[i][i]
+    normalization_constant = U[i][i].inverse()
     U[i] = [u * normalization_constant for u in U[i]]
 
 # Expand U horizontally to create W using Code Listing 3
@@ -121,22 +121,20 @@ for i in range(ceil(log(m, 2))):
     W_i = [F(0)]
     for j in range(ceil(log(m, 2)) + 1):
         W_i += [W_i[k] + U[i][j] for k in range(1 << j)]
-    W.append(W_i[:m])
+    W.append(W_i[:2 * m])
 
 # Expand W vertically to create X using Code Listing 4
 X = []
-for j in range(m):
+for j in range(2 * m):
     X_j = [F(1)]
     for i in range(ceil(log(m, 2))):
         X_j += [X_j[k] * W[i][j] for k in range(1 << i)]
     X.append(X_j[:m])
 
 # Convert to a matrix for further use in cryptographic operations
-M = matrix(F, X)
+M = matrix(F, X[:m])
 
 # Define parameters for Vision Mark-32
-q = 2  # Base field size
-n = 32  # Extension degree for F_{2^32}
 rounds = 8  # Number of rounds
 state_size = 24  # Size of the state array
 
@@ -166,7 +164,7 @@ def apply_inverse(state):
         b = coeffs[1] if len(coeffs) > 1 else F(0)
         x3 = F.random_element() ** 3
         delta = a * (a + b * x3) + b * b
-        delta_inv = delta.inverse_of_unit()
+        delta_inv = delta.inverse()
         alpha_inv = b * delta_inv + delta_inv * (a + b * x3)
         return alpha_inv
     return vector(F, [invert_element(x) for x in state])
@@ -197,7 +195,7 @@ def vision_mark_32_sponge(message, digest_length=8):
     state_size = rate + capacity
 
     # Initialize state
-    state = vector(F, [F.random_element() for _ in range(rate)] + [F(0) for _ in range(capacity)])
+    state = vector(F, [F(0) for _ in range(rate)] + [F(0) for _ in range(capacity)])
     message_length = int(len(message)).to_bytes(8, byteorder='little')
     state[rate] = F(int.from_bytes(message_length[:4], byteorder='little'))
     state[rate+1] = F(int.from_bytes(message_length[4:], byteorder='little'))
