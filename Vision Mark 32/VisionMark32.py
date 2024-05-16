@@ -29,7 +29,6 @@ def binmul(v1, v2, length=None):
     )
 
 class BinaryFieldElement:
-
     def __init__(self, value):
         if isinstance(value, BinaryFieldElement):
             value = value.value
